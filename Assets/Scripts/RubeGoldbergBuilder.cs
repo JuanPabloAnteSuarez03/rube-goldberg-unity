@@ -230,7 +230,7 @@ public static class RubeGoldbergBuilder
         rl.shadows = LightShadows.None;
 
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-        RenderSettings.ambientLight = new Color(0.62f, 0.66f, 0.72f);
+        RenderSettings.ambientLight = new Color(0.46f, 0.50f, 0.58f);
         RenderSettings.fog = false;
     }
 
