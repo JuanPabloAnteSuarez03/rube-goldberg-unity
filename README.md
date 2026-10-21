@@ -1,5 +1,10 @@
 # Máquina de Rube Goldberg · Taller Unity
 
+**Repositorio:** <https://github.com/JuanPabloAnteSuarez03/rube-goldberg-unity>
+
+![Unity](https://img.shields.io/badge/Unity-6-000000?logo=unity&logoColor=white)
+![Física](https://img.shields.io/badge/F%C3%ADsica-Rigidbody%20%C2%B7%20Colisiones-2f6fdb)
+
 Proyecto de Unity con una **máquina de Rube Goldberg** hecha con primitivas y el motor de físicas
 (Rigidbody, colisiones, gravedad y fricción). Toda la máquina se genera por código, así que no hay
 que configurar prefabs ni arrastrar objetos a mano.
