@@ -12,14 +12,18 @@ public static class RubeGoldbergBuilder
     // ------------------- Medidas principales (edítalas si quieres) -------------------
     const float MesaAlto      = 1.00f;   // altura de la mesa
     const float BolaR         = 0.25f;   // radio de la bola 1
-    const float BolaBR        = 0.30f;   // radio de la bola 2
 
-    const int   Fichas        = 6;       // cantidad de fichas de dominó
-    const float FichaX0       = -1.00f;  // posición X de la primera ficha
-    const float FichaPaso     = 0.60f;   // separación entre fichas
-    const float FichaAlto     = 1.10f;
-    const float FichaEspesor  = 0.16f;
-    const float FichaAncho    = 0.62f;
+    public static int   Fichas       = 6;       // cantidad de fichas de dominó
+    public static float FichaX0      = -1.00f;  // posición X de la primera ficha
+    public static float FichaPaso    = 0.60f;   // separación entre fichas
+    public static float FichaAlto    = 1.10f;
+    public static float FichaEspesor = 0.16f;
+    public static float FichaAncho   = 0.62f;
+    public static float FichaMasa    = 0.45f;   // masa de cada ficha
+    public static float MasaPrimera  = 0.90f;   // masa de la primera ficha
+    public static float MasaBola2    = 0.06f;   // masa de la bola 2
+    public static float Bola2X       = 2.50f;   // posición X de la bola 2 (cerca del borde de la mesa)
+    public static float Bola2R       = 0.10f;   // radio de la bola 2 (canica)
 
     const float ParedZ        = 10.0f;   // pared del fondo
 
@@ -34,7 +38,6 @@ public static class RubeGoldbergBuilder
     static readonly Color ColSoporte   = C(146, 158, 170);
     static readonly Color ColBolaA     = C(214, 40, 40);
     static readonly Color ColBolaB     = C(29, 78, 216);
-    static readonly Color ColRepisa    = C(106, 76, 147);
     static readonly Color ColPlaca     = C(45, 55, 66);
     static readonly Color ColBorde     = C(245, 247, 250);
     static readonly Color ColPoste     = C(70, 80, 90);
@@ -79,8 +82,8 @@ public static class RubeGoldbergBuilder
 
         // ---------------- 2. Mesa donde corre el dominó ----------------
         var mesa = Prim(PrimitiveType.Cube, "Mesa", tr,
-                        new Vector3(-0.10f, MesaAlto * 0.5f, 0f),
-                        new Vector3(5.00f, MesaAlto, 1.90f),
+                        new Vector3(-0.025f, MesaAlto * 0.5f, 0f),
+                        new Vector3(5.15f, MesaAlto, 1.90f),
                         Quaternion.identity, Mat("Madera", ColMadera, 0.25f));
 
         // ---------------- 3. Fichas de dominó en cadena ----------------
@@ -92,33 +95,26 @@ public static class RubeGoldbergBuilder
                              new Vector3(FichaEspesor, FichaAlto, FichaAncho),
                              Quaternion.identity, Mat("Ficha" + i, ColFichas[i % ColFichas.Length], 0.3f));
             // la primera ficha pesa un poco más para frenar la bola
-            Cuerpo(ficha, i == 0 ? 0.9f : 0.45f);
+            Cuerpo(ficha, i == 0 ? MasaPrimera : FichaMasa);
         }
 
-        // ---------------- 4. Repisa con la bola 2 ----------------
-        Prim(PrimitiveType.Cube, "Repisa", tr,
-             new Vector3(2.85f, MesaAlto - 0.09f, 0f),
-             new Vector3(1.00f, 0.18f, 1.25f),
-             Quaternion.identity, Mat("Repisa", ColRepisa, 0.4f));
-
-        Pilar(tr, "Soporte repisa", 2.62f, MesaAlto - 0.18f, 0.45f, 1.05f);
-
-        var bolaB = Bola(tr, "Bola 2", new Vector3(2.90f, MesaAlto + BolaBR + 0.02f, 0f),
-                         BolaBR, Mat("BolaB", ColBolaB, 0.75f), 0.9f, false);
+        // ---------------- 4. Canica al borde de la mesa ----------------
+        var bolaB = Bola(tr, "Bola 2", new Vector3(Bola2X, MesaAlto + Bola2R + 0.02f, 0f),
+                         Bola2R, Mat("BolaB", ColBolaB, 0.75f), MasaBola2, false);
 
         // ---------------- 5. Meta: plato, bandera y lámpara ----------------
         Prim(PrimitiveType.Cube, "Plato de meta", tr,
-             new Vector3(4.35f, 0.07f, 0f),
-             new Vector3(2.70f, 0.14f, 1.90f),
+             new Vector3(4.00f, 0.07f, 0f),
+             new Vector3(3.10f, 0.14f, 2.40f),
              Quaternion.identity, Mat("Placa", ColPlaca, 0.5f));
 
         // bordes (el lado que mira a la máquina queda abierto)
-        Prim(PrimitiveType.Cube, "Borde lejos", tr, new Vector3(5.63f, 0.34f, 0f),
-             new Vector3(0.14f, 0.40f, 1.90f), Quaternion.identity, Mat("Borde", ColBorde, 0.6f));
-        Prim(PrimitiveType.Cube, "Borde A", tr, new Vector3(4.35f, 0.34f, 0.88f),
-             new Vector3(2.70f, 0.40f, 0.14f), Quaternion.identity, Mat("Borde", ColBorde, 0.6f));
-        Prim(PrimitiveType.Cube, "Borde B", tr, new Vector3(4.35f, 0.34f, -0.88f),
-             new Vector3(2.70f, 0.40f, 0.14f), Quaternion.identity, Mat("Borde", ColBorde, 0.6f));
+        Prim(PrimitiveType.Cube, "Borde lejos", tr, new Vector3(5.48f, 0.34f, 0f),
+             new Vector3(0.14f, 0.40f, 2.40f), Quaternion.identity, Mat("Borde", ColBorde, 0.6f));
+        Prim(PrimitiveType.Cube, "Borde A", tr, new Vector3(4.00f, 0.34f, 1.13f),
+             new Vector3(3.10f, 0.40f, 0.14f), Quaternion.identity, Mat("Borde", ColBorde, 0.6f));
+        Prim(PrimitiveType.Cube, "Borde B", tr, new Vector3(4.00f, 0.34f, -1.13f),
+             new Vector3(3.10f, 0.40f, 0.14f), Quaternion.identity, Mat("Borde", ColBorde, 0.6f));
 
         // poste + bandera + lámpara
         var poste = Prim(PrimitiveType.Cylinder, "Poste", tr,
@@ -143,9 +139,9 @@ public static class RubeGoldbergBuilder
         // zona invisible que detecta la bola en la meta
         var zona = new GameObject("Zona de meta");
         zona.transform.SetParent(tr, false);
-        zona.transform.localPosition = new Vector3(4.35f, 0.75f, 0f);
+        zona.transform.localPosition = new Vector3(4.00f, 0.75f, 0f);
         var zonaCol = zona.AddComponent<BoxCollider>();
-        zonaCol.size = new Vector3(2.35f, 1.20f, 1.60f);
+        zonaCol.size = new Vector3(2.90f, 1.20f, 2.20f);
         zonaCol.isTrigger = true;
 
         var confeti = new GameObject("Confeti");

@@ -45,9 +45,9 @@ La primera bola se suelta sola después de 1,6 segundos.
       ↓
  [2] Golpea la primera ficha y caen las 6 fichas de dominó
       ↓
- [3] La última ficha empuja la Bola 2, que estaba en la repisa
+ [3] La última ficha barre la canica que está al borde de la mesa
       ↓
- [4] La Bola 2 cae en el plato de META
+ [4] La canica cae en el plato de META
       ↓
  [5] Se enciende la lámpara verde, sube la bandera y hay confeti
 ```
@@ -56,7 +56,7 @@ La primera bola se suelta sola después de 1,6 segundos.
 |-------|--------|-----------------------|
 | 1 | Rampa + Bola 1 | Gravedad, plano inclinado, fricción y rodadura |
 | 2 | Dominó (6 fichas) | Transferencia de impulso y torque |
-| 3 | Repisa + Bola 2 | Choque, caída libre |
+| 3 | Canica al borde de la mesa | Choque, rodadura y caída libre |
 | 4 | Plato de meta | Trigger (zona de detección) |
 
 El HUD muestra la etapa actual y el tiempo, y al final aparece **¡MÁQUINA COMPLETADA!**.
@@ -108,7 +108,8 @@ En `RubeGoldbergBuilder.cs` están las medidas al principio del archivo:
 
 - `retardoInicio` (en `MachineController`) → segundos antes de soltar la bola.
 - `FichaPaso` → separación del dominó (más juntas = caen más rápido).
-- `BolaR`, `BolaBR` → tamaño de las bolas.
+- `BolaR`, `Bola2R` → tamaño de las bolas.
+- `Bola2X` → qué tan cerca del borde queda la canica (si la alejas demasiado, la ficha no la alcanza).
 - Posición y ángulo de la cámara en `CrearEntorno()`.
 
 ---

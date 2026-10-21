@@ -36,6 +36,13 @@ public class MachineController : MonoBehaviour
     bool terminada;
     bool camaraLenta;
     int etapa;             // 0 = espera, 1 = rampa, 2 = dominó, 3 = caída, 4 = meta
+
+    /// <summary>True cuando la bola 2 ya llegó a la meta.</summary>
+    public bool Terminada { get { return terminada; } }
+
+    /// <summary>Etapa actual de la cadena (0 a 4).</summary>
+    public int Etapa { get { return etapa; } }
+
     float tiempoInicio;
     float tiempoFinal;
     float inicioEspera;
