@@ -204,7 +204,11 @@ public static class RubeGoldbergBuilder
         cam.farClipPlane = 300f;
 
         Light sol = null;
+#if UNITY_2022_2_OR_NEWER
+        var luces = Object.FindObjectsByType<Light>(FindObjectsSortMode.None);
+#else
         var luces = Object.FindObjectsOfType<Light>();
+#endif
         for (int i = 0; i < luces.Length; i++)
         {
             if (luces[i].type == LightType.Directional) { sol = luces[i]; break; }

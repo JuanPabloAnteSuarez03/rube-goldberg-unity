@@ -13,10 +13,18 @@ que configurar prefabs ni arrastrar objetos a mano.
 
 ## Cómo abrirlo
 
-1. Abre **Unity Hub → Add / Agregar proyecto** y elige esta carpeta.
-2. Ábrelo con **Unity 6** (6000.x). Si Unity pide *actualizar* el proyecto, acepta.
+1. En Unity Hub pulsa **Import projects** y elige la carpeta **padre**
+   (`.../Desarrollo de Videojuegos`), que es la que contiene a `Maquina de Rube Goldberg`.
+   El Hub nuevo busca proyectos *dentro* de la carpeta que seleccionas.
+2. Ábrelo con **Unity 6** (probado con 6000.6.6f1). Si Unity pide *actualizar* el proyecto, acepta.
 3. Abre la escena **`Assets/Scenes/RubeGoldberg.unity`**.
 4. Pulsa **Play (▶)**.
+
+> Atajo: si el Hub se resiste, abre el proyecto directo con el editor:
+>
+> ```bash
+> ~/Unity/Hub/Editor/6000.6.6f1/Editor/Unity -projectPath "$(pwd)"
+> ```
 
 > Si por alguna razón la escena no abre, crea una escena nueva y pulsa Play: la máquina se genera
 > automáticamente en cualquier escena (ver `MachineBootstrap.cs`).
