@@ -139,9 +139,11 @@ public static class RubeGoldbergBuilder
         // zona invisible que detecta la bola en la meta
         var zona = new GameObject("Zona de meta");
         zona.transform.SetParent(tr, false);
-        zona.transform.localPosition = new Vector3(4.00f, 0.75f, 0f);
+        // Empieza a 2.85 en X y por debajo de la mesa (Y max 0.90) para no tocar
+        // a la bolita que espera en el borde ni a las fichas: solo la bola que cae.
+        zona.transform.localPosition = new Vector3(4.15f, 0.55f, 0f);
         var zonaCol = zona.AddComponent<BoxCollider>();
-        zonaCol.size = new Vector3(2.90f, 1.20f, 2.20f);
+        zonaCol.size = new Vector3(2.60f, 0.70f, 2.20f);
         zonaCol.isTrigger = true;
 
         var confeti = new GameObject("Confeti");
