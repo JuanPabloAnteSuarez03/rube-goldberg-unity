@@ -14,7 +14,18 @@ public static class RubeGoldbergMenu
     public static void Construir()
     {
         var vieja = GameObject.Find(RubeGoldbergBuilder.RootName);
-        if (vieja != null) Object.DestroyImmediate(vieja);
+        if (vieja != null)
+        {
+            // Ya está construida: la seleccionamos para no duplicar el entorno.
+            Selection.activeGameObject = vieja;
+            EditorGUIUtility.PingObject(vieja);
+            if (SceneView.lastActiveSceneView != null)
+            {
+                SceneView.lastActiveSceneView.FrameSelected();
+                SceneView.lastActiveSceneView.Repaint();
+            }
+            return;
+        }
 
         var maquina = RubeGoldbergBuilder.Build();
 
@@ -29,6 +40,38 @@ public static class RubeGoldbergMenu
         }
     }
 
+    /// <summary>Reconstruye y guarda la escena desde cero (se usa también en batch).</summary>
+    [MenuItem("Rube Goldberg/Reconstruir y guardar escena", priority = 10)]
+    public static void ReconstruirYGuardar()
+    {
+        if (!Application.isBatchMode && !EditorUtility.DisplayDialog(
+                "Reconstruir escena",
+                "Se reemplazará Assets/Scenes/RubeGoldberg.unity con la máquina nueva.\n\n" +
+                "Guarda cualquier cambio que quieras conservar antes de continuar.",
+                "Reconstruir", "Cancelar"))
+            return;
+
+        var escena = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        RubeGoldbergBuilder.Build();
+
+        if (!System.IO.Directory.Exists("Assets/Scenes"))
+            System.IO.Directory.CreateDirectory("Assets/Scenes");
+
+        EditorSceneManager.SaveScene(escena, RutaEscena);
+        AssetDatabase.SaveAssets();
+
+        if (Application.isBatchMode)
+        {
+            EditorApplication.Exit(0);
+        }
+        else
+        {
+            EditorUtility.DisplayDialog("Rube Goldberg",
+                "Escena reconstruida y guardada en " + RutaEscena + ".\n" +
+                "Pulsa Play para lanzar los 12 toques.", "¡Vamos!");
+        }
+    }
+
     [MenuItem("Rube Goldberg/Eliminar máquina de la escena", priority = 20)]
     public static void Eliminar()
     {
@@ -40,7 +83,7 @@ public static class RubeGoldbergMenu
         }
 
         var camara = Camera.main;
-        if (camara != null) camara.transform.position = new Vector3(-1.2f, 6.6f, -12.8f);
+        if (camara != null) camara.transform.position = new Vector3(-0.3f, 7.0f, -15.8f);
     }
 
     [MenuItem("Rube Goldberg/Abrir escena RubeGoldberg", priority = 40)]
@@ -66,11 +109,13 @@ public static class RubeGoldbergMenu
             "Máquina de Rube Goldberg",
             "1) Abre Assets/Scenes/RubeGoldberg.unity\n" +
             "2) Pulsa Play (▶)\n" +
-            "3) La bola se suelta sola y recorre: rampa → dominó → bola 2 → meta\n" +
-            "4) R reinicia · F cámara lenta\n\n" +
-            "Para ver la máquina en el editor sin pulsar Play, usa\n" +
-            "Rube Goldberg → Construir máquina en la escena\n" +
-            "(y guarda con Ctrl+S).",
+            "3) La bola recorre los 12 toques: rampa → 6 fichas → torre →\n" +
+            "   4 fichas → ficha final → plato de meta\n" +
+            "4) R reinicia · F cámara lenta · T ray tracing\n\n" +
+            "Para comprobar la cadena sin Play:\n" +
+            "Rube Goldberg → Validar la cadena (12 toques)\n\n" +
+            "Para reconstruir la escena:\n" +
+            "Rube Goldberg → Reconstruir y guardar escena",
             "¡Vamos!");
     }
 }

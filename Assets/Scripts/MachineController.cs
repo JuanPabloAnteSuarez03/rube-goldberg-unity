@@ -3,10 +3,24 @@ using UnityEngine;
 
 /// <summary>
 /// Controla la máquina: suelta la primera bola, mide el tiempo, muestra el HUD,
-/// reinicia la escena con R y celebra cuando la bola 2 cae en la meta.
+/// reinicia con R, cambia a cámara lenta con F y activa el ray tracing con T.
+/// Lleva la cuenta de los 12 toques de la cadena.
 /// </summary>
 public class MachineController : MonoBehaviour
 {
+    public enum TipoToque { Inclinacion, Desplazamiento, Caida, Meta }
+
+    [System.Serializable]
+    public class Toque
+    {
+        public string descripcion;
+        public TipoToque tipo;
+        public Rigidbody cuerpo;
+        public float umbral;
+        public Vector3 referencia;
+        public bool cumplido;
+    }
+
     [System.Serializable]
     public class EstadoCuerpo
     {
@@ -18,30 +32,47 @@ public class MachineController : MonoBehaviour
 
     [Header("Referencias (las asigna RubeGoldbergBuilder)")]
     public Transform bola1;
-    public Transform bola2;
+    public Rigidbody objetoFinal;
     public Transform bandera;
-    public float banderaAbajo = 0.55f;
+    public float banderaAbajo = 0.65f;
     public float banderaArriba = 2.45f;
     public Renderer lampara;
     public Material lamparaOn;
     public Material lamparaOff;
     public Transform confeti;
 
+    [Header("Marcador de toques")]
+    public Renderer[] indicadores;
+    public Material indicadorOn;
+    public Material indicadorOff;
+
     [Header("Ajustes")]
     public float retardoInicio = 1.6f;
 
+    public List<Toque> toques = new List<Toque>();
     public List<EstadoCuerpo> estados = new List<EstadoCuerpo>();
 
     bool soltada;
     bool terminada;
     bool camaraLenta;
-    int etapa;             // 0 = espera, 1 = rampa, 2 = dominó, 3 = caída, 4 = meta
+    int ultimoToque = -1;
 
-    /// <summary>True cuando la bola 2 ya llegó a la meta.</summary>
+    /// <summary>True cuando la bola final ya llegó a la meta.</summary>
     public bool Terminada { get { return terminada; } }
 
-    /// <summary>Etapa actual de la cadena (0 a 4).</summary>
-    public int Etapa { get { return etapa; } }
+    /// <summary>Número de toques completados (0 a 12).</summary>
+    public int ToquesCumplidos
+    {
+        get
+        {
+            int n = 0;
+            for (int i = 0; i < toques.Count; i++) if (toques[i].cumplido) n++;
+            return n;
+        }
+    }
+
+    /// <summary>Etapa actual de la cadena (0 a 12).</summary>
+    public int Etapa { get { return ToquesCumplidos; } }
 
     float tiempoInicio;
     float tiempoFinal;
@@ -67,6 +98,7 @@ public class MachineController : MonoBehaviour
         }
         tiempoInicio = Time.time;
         inicioEspera = Time.unscaledTime;
+        AplicarMarcadores();
     }
 
     void Update()
@@ -75,12 +107,7 @@ public class MachineController : MonoBehaviour
 
         if (!soltada && Time.unscaledTime - inicioEspera >= retardoInicio) SoltarBola();
 
-        if (soltada && !terminada)
-        {
-            if (etapa < 1) etapa = 1;
-            if (bola1 != null && bola1.position.x > -2.2f && etapa < 2) etapa = 2;
-            if (bola2 != null && bola2.position.y < 0.85f && etapa < 3) etapa = 3;
-        }
+        if (soltada && !terminada) EvaluarToques();
 
         AnimarBandera();
     }
@@ -101,7 +128,6 @@ public class MachineController : MonoBehaviour
     public void SoltarBola()
     {
         soltada = true;
-        if (etapa < 1) etapa = 1;
         tiempoInicio = Time.time;
         if (bola1 != null)
         {
@@ -157,19 +183,82 @@ public class MachineController : MonoBehaviour
         if (lampara != null && lamparaOff != null) lampara.sharedMaterial = lamparaOff;
         objetivoBandera = banderaAbajo;
 
+        for (int i = 0; i < toques.Count; i++) toques[i].cumplido = false;
+        ultimoToque = -1;
+        AplicarMarcadores();
+
         soltada = false;
         terminada = false;
-        etapa = 0;
         tiempoInicio = Time.time;
         inicioEspera = Time.unscaledTime;
+    }
+
+    // ---------------- Detección de los 12 toques ----------------
+    /// <summary>Comprueba las condiciones de todos los toques. Público para poder validar en el editor.</summary>
+    public void EvaluarToques()
+    {
+        for (int i = 0; i < toques.Count; i++)
+        {
+            var t = toques[i];
+            if (t == null || t.cumplido || t.cuerpo == null) continue;
+
+            bool ok = false;
+            switch (t.tipo)
+            {
+                case TipoToque.Inclinacion:
+                    // La ficha se ha inclinado lo suficiente como para considerarla caída.
+                    ok = Vector3.Angle(t.cuerpo.transform.up, Vector3.up) > t.umbral;
+                    break;
+                case TipoToque.Desplazamiento:
+                    Vector3 d = t.cuerpo.position - t.referencia;
+                    d.y = 0f;
+                    ok = d.magnitude > t.umbral;
+                    break;
+                case TipoToque.Caida:
+                    ok = t.cuerpo.position.y < t.umbral;
+                    break;
+            }
+
+            if (ok) MarcarToque(i);
+        }
+    }
+
+    void MarcarToque(int indice)
+    {
+        if (indice < 0 || indice >= toques.Count) return;
+        if (toques[indice].cumplido) return;
+
+        toques[indice].cumplido = true;
+        ultimoToque = indice;
+        if (indicadores != null && indice < indicadores.Length)
+            AplicarMarcador(indice);
+    }
+
+    void AplicarMarcadores()
+    {
+        if (indicadores == null) return;
+        for (int i = 0; i < indicadores.Length; i++) AplicarMarcador(i);
+    }
+
+    void AplicarMarcador(int i)
+    {
+        if (indicadores == null || i < 0 || i >= indicadores.Length) return;
+        var r = indicadores[i];
+        if (r == null) return;
+        bool hecho = i < toques.Count && toques[i].cumplido;
+        var mat = hecho ? indicadorOn : indicadorOff;
+        if (mat != null) r.sharedMaterial = mat;
     }
 
     public void CompletarMeta()
     {
         if (terminada) return;
         terminada = true;
-        etapa = 4;
         tiempoFinal = Time.time;
+
+        // La meta cierra la cadena: todos los toques quedan completados.
+        for (int i = 0; i < toques.Count; i++)
+            if (!toques[i].cumplido) MarcarToque(i);
 
         if (lampara != null && lamparaOn != null) lampara.sharedMaterial = lamparaOn;
         objetivoBandera = banderaArriba;
@@ -197,17 +286,24 @@ public class MachineController : MonoBehaviour
     void LanzarConfeti()
     {
         if (confeti == null) return;
-        var colores = new[] { "BolaA", "BolaB", "Bandera", "Ficha0", "Ficha3", "Ficha4" };
+        var colores = new[]
+        {
+            new Color(0.84f, 0.16f, 0.16f), new Color(0.11f, 0.31f, 0.85f),
+            new Color(1.00f, 0.84f, 0.25f), new Color(1.00f, 0.76f, 0.00f),
+            new Color(0.90f, 0.22f, 0.27f), new Color(0.26f, 0.67f, 0.55f),
+            new Color(0.15f, 0.49f, 0.63f)
+        };
         for (int i = 0; i < 28; i++)
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
             go.name = "Confeti";
             go.transform.SetParent(confeti, false);
-            go.transform.position = new Vector3(4.3f, 3.0f, 0f) + Random.insideUnitSphere * 0.5f;
+            go.transform.position = new Vector3(6.00f, 3.0f, 0f) + Random.insideUnitSphere * 0.5f;
             go.transform.localScale = Vector3.one * Random.Range(0.08f, 0.16f);
             go.transform.rotation = Random.rotation;
 
-            var mat = RubeGoldbergBuilder.Mat(colores[i % colores.Length], Color.white, 0.4f);
+            var mat = RubeGoldbergBuilder.Mat("Confeti" + (i % colores.Length),
+                                              colores[i % colores.Length], 0.4f);
             go.GetComponent<MeshRenderer>().sharedMaterial = mat;
 
             var rb = go.AddComponent<Rigidbody>();
@@ -226,15 +322,12 @@ public class MachineController : MonoBehaviour
     // ---------------- HUD ----------------
     string TextoEtapa()
     {
-        switch (etapa)
-        {
-            case 0: return "Preparando la máquina...";
-            case 1: return "Etapa 1/3 · La bola rueda por la rampa";
-            case 2: return "Etapa 2/3 · Dominó en cadena";
-            case 3: return "Etapa 3/3 · La bola cae en la meta";
-            case 4: return "¡Máquina completada!";
-            default: return "";
-        }
+        if (terminada) return "¡Máquina completada!";
+        if (!soltada) return "Preparando la máquina...";
+        if (ultimoToque >= 0 && ultimoToque < toques.Count)
+            return "Toque " + (ultimoToque + 1) + "/" + RubeGoldbergBuilder.ToquesTotal +
+                   " · " + toques[ultimoToque].descripcion;
+        return "Soltando la bola 1...";
     }
 
     void PrepararEstilos(float s)
@@ -252,7 +345,7 @@ public class MachineController : MonoBehaviour
         estiloTexto.normal.textColor = new Color(0.80f, 0.87f, 0.95f);
 
         estiloEtapa = new GUIStyle(GUI.skin.label);
-        estiloEtapa.fontSize = Mathf.RoundToInt(19f * s);
+        estiloEtapa.fontSize = Mathf.RoundToInt(18f * s);
         estiloEtapa.fontStyle = FontStyle.Bold;
         estiloEtapa.normal.textColor = new Color(0.55f, 0.85f, 1f);
 
@@ -280,35 +373,58 @@ public class MachineController : MonoBehaviour
         Panel(new Rect(0f, 0f, Screen.width, 6f * s), new Color(0.83f, 0.14f, 0.19f));
 
         // tarjeta de información
-        var tarjeta = new Rect(24f * s, 24f * s, 560f * s, 154f * s);
-        Panel(tarjeta, new Color(0.06f, 0.09f, 0.13f, 0.80f));
+        var tarjeta = new Rect(24f * s, 24f * s, 600f * s, 218f * s);
+        Panel(tarjeta, new Color(0.06f, 0.09f, 0.13f, 0.82f));
 
         GUI.Label(new Rect(tarjeta.x + 18f * s, tarjeta.y + 10f * s, tarjeta.width - 36f * s, 34f * s),
                   "MÁQUINA DE RUBE GOLDBERG", estiloTitulo);
         GUI.Label(new Rect(tarjeta.x + 18f * s, tarjeta.y + 46f * s, tarjeta.width - 36f * s, 24f * s),
-                  "Taller Unity · motor de físicas", estiloTexto);
-        GUI.Label(new Rect(tarjeta.x + 18f * s, tarjeta.y + 74f * s, tarjeta.width - 36f * s, 26f * s),
+                  "Taller Unity · 12 toques · motor de físicas", estiloTexto);
+        GUI.Label(new Rect(tarjeta.x + 18f * s, tarjeta.y + 74f * s, tarjeta.width - 36f * s, 28f * s),
                   TextoEtapa(), estiloEtapa);
 
         float tiempo = (terminada ? tiempoFinal : Time.time) - tiempoInicio;
         if (!soltada) tiempo = 0f;
         GUI.Label(new Rect(tarjeta.x + 18f * s, tarjeta.y + 106f * s, tarjeta.width - 36f * s, 24f * s),
-                  "Tiempo: " + tiempo.ToString("0.00") + " s", estiloTexto);
+                  "Tiempo: " + tiempo.ToString("0.00") + " s   ·   Toques: " +
+                  ToquesCumplidos + "/" + RubeGoldbergBuilder.ToquesTotal, estiloTexto);
+
+        // barra de 12 toques
+        float anchoPunto = 38f * s;
+        float altoPunto = 12f * s;
+        for (int i = 0; i < RubeGoldbergBuilder.ToquesTotal; i++)
+        {
+            bool hecho = i < toques.Count && toques[i].cumplido;
+            var color = hecho ? new Color(0.18f, 0.90f, 0.47f) : new Color(0.24f, 0.29f, 0.36f);
+            Panel(new Rect(tarjeta.x + 18f * s + i * anchoPunto, tarjeta.y + 148f * s,
+                           anchoPunto - 6f * s, altoPunto), color);
+        }
+
+        // estado del ray tracing
+        string estadoRT = RayTracingView.ActivoGlobal ? "ON" : "OFF";
+        var colorRT = RayTracingView.ActivoGlobal
+            ? new Color(0.40f, 1f, 0.70f)
+            : new Color(0.62f, 0.68f, 0.76f);
+        var estiloRT = new GUIStyle(estiloTexto);
+        estiloRT.normal.textColor = colorRT;
+        GUI.Label(new Rect(tarjeta.x + 18f * s, tarjeta.y + 172f * s, tarjeta.width - 36f * s, 26f * s),
+                  "Ray tracing: " + estadoRT + "   ·   [T] activar / desactivar", estiloRT);
 
         // aviso de controles
 #if ENABLE_LEGACY_INPUT_MANAGER
-        GUI.Label(new Rect(24f * s, Screen.height - 40f * s, 600f * s, 24f * s),
-                  "[R] Reiniciar   ·   [F] Cámara lenta", estiloTexto);
+        GUI.Label(new Rect(24f * s, Screen.height - 40f * s, 760f * s, 24f * s),
+                  "[R] Reiniciar   ·   [F] Cámara lenta   ·   [T] Ray tracing", estiloTexto);
 #endif
 
         // cartel de meta
         if (terminada)
         {
-            float ancho = 760f * s;
+            float ancho = 780f * s;
             float alto = 150f * s;
             var r = new Rect((Screen.width - ancho) * 0.5f, Screen.height * 0.12f, ancho, alto);
             Panel(r, new Color(0.05f, 0.55f, 0.25f, 0.94f));
-            GUI.Label(r, "¡MÁQUINA COMPLETADA!\nTiempo total: " + (tiempoFinal - tiempoInicio).ToString("0.00") + " s",
+            GUI.Label(r, "¡MÁQUINA COMPLETADA!\n12 toques · Tiempo total: " +
+                         (tiempoFinal - tiempoInicio).ToString("0.00") + " s",
                       estiloGrande);
         }
     }
